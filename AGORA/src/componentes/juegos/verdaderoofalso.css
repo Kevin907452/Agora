@@ -1,0 +1,265 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  font-family: "League Spartan", sans-serif;
+  box-sizing: border-box;
+}
+
+/* Contenedor principal sin fondo general */
+.vf-container {
+  width: 100%;
+  padding: 1.5rem 1rem;
+  color: #39265c;
+}
+
+/* Pantalla final centrado */
+.vf-card-final {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+}
+
+.vf-box-final {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(28, 0, 168, 0.171);
+  padding: 2.5rem;
+  text-align: center;
+  max-width: 28rem;
+  width: 100%;
+  border: 1px solid #e1cbd8;
+}
+
+/* Botón Volver (Header) */
+.btn-volver {
+  background-color: #9571dd;
+  color: #ffffff;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, background-color 0.2s;
+  box-shadow: 0 10px 15px rgba(28, 0, 168, 0.15);
+}
+
+.btn-volver:hover {
+  background-color: #5d4392;
+  transform: scale(1.05);
+}
+
+/* Tarjeta principal del juego */
+.agora-vf-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 42rem;
+  margin: 1.5rem auto 0;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(28, 0, 168, 0.171);
+  padding: 2rem;
+  border: 1px solid #e1cbd8;
+}
+
+/* Título */
+.agora-vf-titulo {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  color: #39265c;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  letter-spacing: -0.025em;
+  border-bottom: 2px solid #e4c6eb;
+  padding-bottom: 0.75rem;
+}
+
+/* Indicadores de estado */
+.agora-vf-puntos {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #6e4da3;
+  margin-bottom: 0.25rem;
+}
+
+.agora-vf-progreso {
+  text-align: center;
+  color: #8f72c2;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+/* Caja del caso / situación */
+.vf-caso-box {
+  background-color: #f8f3fb;
+  border: 1px solid #e4c6eb;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.vf-caso-titulo {
+  font-weight: 800;
+  color: #39265c;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.vf-caso-texto {
+  color: #5d4392;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+/* Pregunta */
+.agora-vf-pregunta {
+  font-size: clamp(1.15rem, 2.5vw, 1.35rem);
+  font-weight: 700;
+  color: #39265c;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Botones de acción Verdadero / Falso */
+.vf-botones-group {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+}
+
+.btn-vf-opcion {
+  padding: 0.85rem 2.25rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Botón Verdadero neutro */
+.btn-verdadero {
+  background-color: #9571dd;
+  color: #ffffff;
+}
+
+.btn-verdadero:hover {
+  background-color: #7e56cb;
+}
+
+/* Botón Falso neutro */
+.btn-falso {
+  background-color: #5d4392;
+  color: #ffffff;
+}
+
+.btn-falso:hover {
+  background-color: #483273;
+}
+
+/* Respuestas correctas e incorrectas */
+.btn-vf-opcion.correcta {
+  background-color: #d1fae5;
+  border-color: #48d3a4;
+  color: #198869;
+}
+
+.btn-vf-opcion.incorrecta {
+  background-color: #fee2e2;
+  border-color: #e66283;
+  color: #af396a;
+}
+
+/* Caja de retroalimentación */
+.vf-feedback-box {
+  margin-top: 1.5rem;
+  background-color: #f3eaf8;
+  border: 1px solid #e4c6eb;
+  border-radius: 1rem;
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.vf-feedback-correcto {
+  color: #5dc7c7;
+  font-size: 1.15rem;
+}
+
+.vf-feedback-incorrecto {
+  color: #dc2672;
+  font-size: 1.15rem;
+}
+
+.vf-feedback-solucion {
+  margin-top: 0.5rem;
+  color: #39265c;
+  font-size: 1rem;
+}
+
+/* Botón Siguiente y reinicio */
+.btn-accion-principal {
+  margin-top: 1.5rem;
+  width: 100%;
+  background-color: #9571dd;
+  color: #ffffff;
+  padding: 0.85rem 2rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 4px 6px rgba(28, 0, 168, 0.15);
+}
+
+.btn-accion-principal:hover:not(:disabled) {
+  background-color: #5d4392;
+}
+
+.btn-accion-principal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pantalla final textos */
+.titulo-final {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #39265c;
+}
+
+.puntaje-final {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  color: #39265c;
+}
+
+.mensaje-final {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  color: #6e4da3;
+}
+
+/* ==========================================
+   RESPONSIVE (MÓVILES)
+   ========================================== */
+
+@media (max-width: 480px) {
+  .agora-vf-card {
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .vf-botones-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .btn-vf-opcion {
+    width: 100%;
+  }
+}

@@ -1,0 +1,118 @@
+[
+  {
+    "id": "1",
+    "title": "Deberes ciudadanos",
+    "topics": [
+      {
+        "id": "quiz-deberes-1",
+        "title": "Quiz 1: Leyes, Constitución y Derechos",
+        "type": "quiz",
+        "quizId": 101,
+        "answers": [1, 1, 1]
+      },
+      {
+        "id": "quiz-deberes-2",
+        "title": "Quiz 2: Ambiente y Participación Democrática",
+        "type": "quiz",
+        "quizId": 102,
+        "answers": [1, 1, 2]
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "title": "Valores ciudadanos",
+    "topics": [
+      {
+        "id": "quiz-valores",
+        "title": "Quiz",
+        "type": "quiz",
+        "quizId": 2,
+        "answers": []
+      }
+    ]
+  },
+ {
+    "id": "3",
+    "title": "Historia de la democracia en Costa Rica",
+    "topics": [
+      {
+        "id": "quiz-historia-1",
+        "title": "Quiz 1: Orígenes y Consolidación Democrática",
+        "type": "quiz",
+        "quizId": 301,
+        "answers": [1, 1, 1]
+      },
+      {
+        "id": "quiz-historia-2",
+        "title": "Quiz 2: Voto Femenino e Institucionalidad",
+        "type": "quiz",
+        "quizId": 302,
+        "answers": [1, 1, 1]
+      }
+    ]
+  },
+  
+  {
+    "id": "4",
+    "title": "Por qué la democracia y la política son importantes",
+    "topics": [
+      {
+        "id": "quiz-demo-1",
+        "title": "Quiz 1: Asuntos Públicos y Soberanía Popular",
+        "type": "quiz",
+        "quizId": 401,
+        "answers": [1, 1, 1]
+      },
+      {
+        "id": "quiz-demo-2",
+        "title": "Quiz 2: Derechos, Estado de Derecho y Transparencia",
+        "type": "quiz",
+        "quizId": 402,
+        "answers": [1, 1, 0]
+      }
+    ]
+  },
+
+
+ {
+    "id": "5",
+    "title": "Funcionamiento de los tres poderes",
+    "topics": [
+      {
+        "id": "quiz-poderes-1",
+        "title": "Quiz 1: Poder Ejecutivo y Poder Legislativo",
+        "type": "quiz",
+        "quizId": 501,
+        "answers": [1, 1, 1]
+      },
+      {
+        "id": "quiz-poderes-2",
+        "title": "Quiz 2: El Poder Judicial y el Equilibrio de Poderes",
+        "type": "quiz",
+        "quizId": 502,
+        "answers": [1, 1, 0]
+      }
+    ]
+  },
+{
+    "id": "6",
+    "title": "Organización del gobierno",
+    "topics": [
+      {
+        "id": "quiz-gobierno-1",
+        "title": "Quiz 1: Elección de Autoridades y Ética Gubernamental",
+        "type": "quiz",
+        "quizId": 601,
+        "answers": [1, 1, 1]
+      },
+      {
+        "id": "quiz-gobierno-2",
+        "title": "Quiz 2: Principios y Descentralización del Estado",
+        "type": "quiz",
+        "quizId": 602,
+        "answers": [0, 2, 1]
+      }
+    ]
+  }
+]

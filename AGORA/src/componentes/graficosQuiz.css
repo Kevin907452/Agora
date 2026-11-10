@@ -1,0 +1,172 @@
+/* =========================================================
+   ESTILOS RESPONSIVE Y DEGRADADO PARA EL GRÁFICO DE AFINIDAD
+   ========================================================= */
+
+/* Título del gráfico centrado y grande */
+.gq-titulo-grafico-centrado {
+  text-align: center;
+  margin: 3.5rem 0 1.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--morado, #4a386d);
+  padding: 0 1rem;
+}
+
+/* Contenedor flexible y adaptable para móviles y PC */
+.gq-columnas {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(0.4rem, 2vw, 1.8rem);
+  padding: 1rem 0.5rem 2rem;
+  min-height: 280px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.gq-columna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0; /* Vital para que el flexbox no desborde en móvil */
+}
+
+.gq-columna-valor {
+  font-weight: 800;
+  color: var(--morado, #4a386d);
+  font-size: clamp(0.85rem, 1.5vw, 1.15rem);
+}
+
+.gq-columna-carril {
+  position: relative;
+  width: 100%;
+  max-width: 70px;
+  height: 190px;
+  background: #f2edf8;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px rgba(74, 56, 109, 0.05);
+}
+
+/* Degradado de lila claro a morado en las barras */
+.gq-columna-relleno {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, #b39eff 0%, #7d67ec 100%);
+  border-radius: 16px;
+  transition: height 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Partido con mayor porcentaje (mantiene el mismo degradado elegante con pulso) */
+.gq-columna-relleno--mejor {
+  background: linear-gradient(180deg, #b39eff 0%, #6c53e8 100%);
+  box-shadow: 0 0 0 0 rgba(108, 83, 232, 0.4);
+  animation: gq-latido 2s ease-in-out infinite;
+}
+
+/* Nombres de los partidos totalmente legibles y sin cortes (multilínea adaptable) */
+.gq-columna-nombre {
+  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+  font-weight: 700;
+  color: var(--tinta-suave, #675b82);
+  text-align: center;
+  line-height: 1.15;
+  width: 100%;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Permite hasta 3 líneas para que nunca se corte */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Animación de pulso suave */
+@keyframes gq-latido {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(108, 83, 232, 0.35); }
+  50% { box-shadow: 0 0 0 10px rgba(108, 83, 232, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gq-columna-relleno {
+    transition: none !important;
+  }
+}
+
+/* =========================================================
+   CONFETI VISIBLE Y ANIMADO
+   ========================================================= */
+
+.gq-confeti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 99999;
+}
+
+.gq-confeti span {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 15px;
+  border-radius: 3px;
+  opacity: 1;
+  animation-name: gq-caer;
+  animation-timing-function: cubic-bezier(0.25, 0.6, 0.5, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes gq-caer {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--gq-deriva, 20px), 105vh) rotate(var(--gq-giro, 360deg));
+  }
+}
+
+/* =========================================================
+   ANIMACIONES DE LAS PREGUNTAS Y OPCIONES DEL QUIZ
+   ========================================================= */
+
+.gq-entrada {
+  animation: gq-entrada 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.gq-escalonado > * {
+  animation: gq-subir 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.gq-escalonado > *:nth-child(1) { animation-delay: 0.04s; }
+.gq-escalonado > *:nth-child(2) { animation-delay: 0.08s; }
+.gq-escalonado > *:nth-child(3) { animation-delay: 0.12s; }
+.gq-escalonado > *:nth-child(4) { animation-delay: 0.16s; }
+.gq-escalonado > *:nth-child(5) { animation-delay: 0.20s; }
+.gq-escalonado > *:nth-child(6) { animation-delay: 0.24s; }
+.gq-escalonado > *:nth-child(7) { animation-delay: 0.28s; }
+
+.gq-zoom {
+  animation: gq-zoom 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards;
+}
+
+@keyframes gq-subir {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gq-entrada {
+  from { opacity: 0; transform: translateX(20px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes gq-zoom {
+  from { opacity: 0; transform: scale(0.85) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

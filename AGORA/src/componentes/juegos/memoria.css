@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  font-family: "League Spartan", sans-serif;
+  box-sizing: border-box;
+}
+
+/* Contenedor principal */
+.memoria-container {
+  width: 100%;
+  padding: 1rem;
+  color: #e4c6eb;
+}
+
+/* Botón Volver */
+.btn-volver {
+  background-color: #9571dd;
+  color: #ffffff;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 10px 15px rgba(28, 0, 168, 0.15);
+}
+
+.btn-volver:hover {
+  background-color: #5d4392;
+  transform: scale(1.05);
+}
+
+/* Tarjeta principal adaptable */
+.agora-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 56rem;
+  margin: 1.5rem auto 0;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(28, 0, 168, 0.171);
+  padding: 1.5rem;
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Título */
+.agora-titulo {
+  font-size: clamp(1.75rem, 4vw, 2.25rem); /* Se adapta fluidamente al tamaño de pantalla */
+  font-weight: 800;
+  color: #39265c;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  letter-spacing: -0.025em;
+  border-bottom: 2px solid #e4c6eb;
+  padding-bottom: 0.5rem;
+}
+
+/* Contador de parejas */
+.agora-contador {
+  text-align: center;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  font-weight: 700;
+  color: #cc88db;
+  margin-bottom: 1rem;
+}
+
+/* Mensaje de Ganador */
+.ganador-banner {
+  background-color: #f3eaf8;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.ganador-titulo {
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 700;
+  color: #39265c;
+}
+
+.ganador-texto {
+  color: #5d4392;
+  margin-top: 8px;
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  text-align: center;
+}
+
+.btn-reiniciar {
+  margin-top: 0.75rem;
+  background-color: #9571dd;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 4px 6px rgba(28, 0, 168, 0.15);
+}
+
+.btn-reiniciar:hover {
+  background-color: #5d4392;
+}
+
+/* Grid de cartas responsive */
+.cartas-grid {
+  display: grid;
+  /* Por defecto en celulares muestra 3 o 4 columnas adaptables con minmax */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+/* Botón/Carta individual */
+.carta-btn {
+  height: 8rem;
+  border-radius: 1rem;
+  background-color: #9571dd;
+  color: #ffffff;
+  font-size: 3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #7e56cb;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.carta-btn:hover {
+  transform: translateY(-3px);
+  background-color: #7e56cb;
+  box-shadow: 0 8px 16px rgba(149, 113, 221, 0.35);
+}
+
+.carta-btn.revelada {
+  background-color: #ffffff;
+  border-color: #e4c6eb;
+}
+
+/* Imagen dentro de la carta */
+.carta-icono {
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: contain;
+}
+
+/* ==========================================
+   MEDIA QUERIES (RESPONSIVE PARA MÓVILES)
+   ========================================== */
+
+@media (max-width: 768px) {
+  .agora-card {
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  /* En tablets cambiamos a 4 columnas más compactas o adaptadas */
+  .cartas-grid {
+    gap: 0.75rem;
+  }
+
+  .carta-btn {
+    height: 6.5rem; /* Reducimos la altura en pantallas medianas */
+  }
+
+  .carta-icono {
+    width: 4rem;
+    height: 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* En teléfonos móviles pequeños pasamos a 4 columnas ajustadas o 3 si lo prefieres */
+  .cartas-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .carta-btn {
+    height: 5rem; /* Cartas más compactas para que quepan bien en celulares */
+    font-size: 2rem;
+  }
+
+  .carta-icono {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .memoria-container {
+    padding: 0.5rem;
+  }
+}

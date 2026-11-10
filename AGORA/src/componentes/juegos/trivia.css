@@ -1,0 +1,260 @@
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600;700;800&display=swap');
+
+* {
+  font-family: "League Spartan", sans-serif;
+  box-sizing: border-box;
+}
+
+/* Contenedor principal sin fondo total */
+.trivia-container {
+  width: 100%;
+  padding: 1rem;
+  color: #39265c;
+
+}
+
+/* Contenedor pantalla final / tarjeta principal */
+.trivia-card-final {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.trivia-box-final {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(28, 0, 168, 0.171);
+  padding: 2.5rem;
+  text-align: center;
+  max-width: 28rem;
+  width: 100%;
+}
+
+/* Botón Volver */
+.btn-volver {
+  background-color: #9571dd;
+  color: #ffffff;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, background-color 0.2s;
+  box-shadow: 0 10px 15px rgba(28, 0, 168, 0.15);
+}
+
+.btn-volver:hover {
+  background-color: #5d4392;
+  transform: scale(1.05);
+}
+
+/* Tarjeta principal del juego */
+.agora-trivia-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 42rem;
+  margin: 1.5rem auto 0;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px rgba(28, 0, 168, 0.171);
+  padding: 2rem;
+  border: 1px solid #e1cbd8;
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Título */
+.agora-trivia-titulo {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  color: #39265c;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.025em;
+  border-bottom: 2px solid #e4c6eb;
+  padding-bottom: 0.75rem;
+}
+
+/* Detalle turquesa muy sutil en el contador de puntaje */
+.agora-trivia-puntos {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #83eeda; 
+  margin-bottom: 0.25rem;
+}
+
+.agora-trivia-progreso {
+  color: #6e4da3;
+  margin-bottom: 1.25rem;
+  font-size: 1rem;
+}
+
+.agora-trivia-pregunta {
+  font-size: clamp(1.15rem, 2.5vw, 1.35rem);
+  font-weight: 700;
+  color: #39265c;
+  margin-bottom: 1.5rem;
+}
+
+/* Opciones de respuesta */
+.trivia-opciones-space {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.trivia-opcion-btn {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.85rem;
+  border: 2px solid #e4c6eb;
+  text-align: left;
+  background-color: #ffffff;
+  color: #39265c;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trivia-opcion-btn:hover {
+  border-color: #9571dd;
+  background-color: #fbf8fc;
+}
+
+/* Estados de respuesta con toque turquesa opcional para aciertos */
+.trivia-opcion-btn.correcta {
+  background-color: #e6fffa;
+  border-color: #48c5c3; /* Turquesa oscuro institucional */
+  color: #234e52;
+}
+
+.trivia-opcion-btn.incorrecta {
+  background-color: #fff5f5;
+  border-color: #e53e84;
+  color: #742a53;
+}
+
+/* Botón Siguiente / Jugar de nuevo */
+.btn-accion-principal {
+  margin-top: 1.5rem;
+  background-color: #9571dd;
+  color: #ffffff;
+  padding: 0.85rem 2rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 4px 6px rgba(28, 0, 168, 0.15);
+}
+
+.btn-accion-principal:hover:not(:disabled) {
+  background-color: #5d4392;
+}
+
+.btn-accion-principal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pantalla final textos */
+.titulo-final {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #fdc4f8;
+}
+
+.puntaje-final {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  color: #39265c;
+}
+
+.mensaje-final {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  color: #3bc4ab; /* Toque turquesa sutil en el mensaje de éxito */
+}
+
+/* ==========================================
+   RESPONSIVE (MÓVILES)
+   ========================================== */
+
+@media (max-width: 480px) {
+  .agora-trivia-card {
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .trivia-box-final {
+    padding: 1.5rem;
+  }
+}
+/*CRONOMETRO */
+
+
+.cronometro-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.cronometro-circulo {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  transition: background 0.3s linear;
+}
+
+.cronometro-interno {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+}
+
+.cronometro-normal {
+  color: #8e6bcf;
+}
+
+.cronometro-alerta {
+  color: #c4378e;
+}
+
+.alerta-tiempo-badge {
+  margin-top: 10px;
+  padding: 16px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.alerta-advertencia {
+  background-color: #ffe9a1;
+  color: #d6467d;
+}
+
+.alerta-agotado {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

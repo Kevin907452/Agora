@@ -6,7 +6,7 @@ const db = require("./db");
 
 dotenv.config();
 
-const path = require("path");
+const path = require('path');
 const express = require("express");
 const app = express();
 

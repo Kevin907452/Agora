@@ -987,12 +987,12 @@ app.post("/api/google-login", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 const path = require('path');
 app.listen(PORT, () => {
-app.use(express.static(path.join(__dirname, "../AGORA/dist"))); 
+app.use(express.static(path.join(__dirname, "../AGORA/build"))); 
 // Nota: Si tu carpeta de build se llama 'build' en lugar de 'dist', cámbialo en la línea anterior.
 
 // Redirigir cualquier otra petición al index.html de React (indispensable para el enrutamiento)
 app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../AGORA/dist/index.html"));
+    res.sendFile(path.join(__dirname, "../AGORA/build/index.html"));
 });
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

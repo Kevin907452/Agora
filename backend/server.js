@@ -991,8 +991,8 @@ app.use(express.static(path.join(__dirname, "../AGORA/build")));
 // Nota: Si tu carpeta de build se llama 'build' en lugar de 'dist', cámbialo en la línea anterior.
 
 // Redirigir cualquier otra petición al index.html de React (indispensable para el enrutamiento)
-app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../AGORA/build/index.html"));
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "../AGORA/build/index.html"));
 });
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

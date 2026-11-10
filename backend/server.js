@@ -3,11 +3,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const db = require("./db");
+const path = require("path");
 
 dotenv.config();
-
-const path = require('path');
-const express = require("express");
 const app = express();
 
 // Aumentamos el límite del body parser a 10mb para permitir la subida de imágenes/banderas en Base64

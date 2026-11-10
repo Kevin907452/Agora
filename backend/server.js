@@ -984,15 +984,16 @@ app.post("/api/google-login", async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-const path = require('path');
-app.listen(PORT, () => {
-app.use(express.static(path.join(__dirname, "../AGORA/build"))); 
-// Nota: Si tu carpeta de build se llama 'build' en lugar de 'dist', cámbialo en la línea anterior.
+// 1. Primero configuras los archivos estáticos del frontend
+app.use(express.static(path.join(__dirname, "../AGORA/build")));
 
-// Redirigir cualquier otra petición al index.html de React (indispensable para el enrutamiento)
+// 2. Luego tus rutas comodín de React (excluyendo /api)
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../AGORA/build/index.html"));
 });
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+
+// 3. Y por último, el app.listen al final del todo
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

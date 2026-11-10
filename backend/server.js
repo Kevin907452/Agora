@@ -6,6 +6,8 @@ const db = require("./db");
 
 dotenv.config();
 
+const path = require("path");
+const express = require("express");
 const app = express();
 
 // Aumentamos el límite del body parser a 10mb para permitir la subida de imágenes/banderas en Base64

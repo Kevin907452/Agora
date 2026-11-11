@@ -984,10 +984,7 @@ app.post("/api/google-login", async (req, res) => {
     }
 });
 
-// 1. Primero configuras los archivos estáticos del frontend
 app.use(express.static(path.join(__dirname, "../AGORA/dist")));
-
-// 2. Luego tus rutas comodín de React (excluyendo /api)
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../AGORA/dist/index.html"));
 });

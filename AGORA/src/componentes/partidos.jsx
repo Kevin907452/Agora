@@ -5,9 +5,21 @@ import './partidos.css';
 export function Card({ partido, onClick }) {
   if (!partido) return null;
 
-  const rutaImagen = partido.bandera_url
-    ? (partido.bandera_url.startsWith('/') ? partido.bandera_url : `/${partido.bandera_url}`)
-    : '/assets/par1.png';
+  // Lógica mejorada para la ruta de la imagen
+  let rutaImagen = '/par1.png'; // Imagen por defecto (en la carpeta public)
+
+  if (partido.bandera_url) {
+    if (partido.bandera_url.startsWith('data:image') || partido.bandera_url.startsWith('http')) {
+      // Es Base64 o un enlace externo (HTTP)
+      rutaImagen = partido.bandera_url;
+    } else if (partido.bandera_url.startsWith('/')) {
+      // Ya tiene la barra (ej: /par2.png)
+      rutaImagen = partido.bandera_url;
+    } else {
+      // Tiene solo el nombre (ej: par2.png)
+      rutaImagen = `/${partido.bandera_url}`;
+    }
+  }
 
   return (
     <div 
@@ -42,7 +54,8 @@ export default function PartidosSection() {
 
   // Cargar lista general de partidos
   useEffect(() => {
-    fetch('http://localhost:3000/api/partidos')
+    // ⚠️ IMPORTANTE: Cambiado de http://localhost:3000 a ruta relativa /api
+    fetch('/api/partidos')
       .then((res) => {
         if (!res.ok) throw new Error(`Servidor devolvió status ${res.status}`);
         return res.json();
@@ -67,7 +80,8 @@ export default function PartidosSection() {
     setPartidoSeleccionado(partido);
     setCargandoDetalle(true);
 
-    fetch(`http://localhost:3000/api/partidos/${partido.id_partido}`)
+    // ⚠️ IMPORTANTE: Cambiado de http://localhost:3000 a ruta relativa /api
+    fetch(`/api/partidos/${partido.id_partido}`)
       .then((res) => res.json())
       .then((data) => {
         setDetallePartido({
@@ -119,9 +133,14 @@ export default function PartidosSection() {
             
             <div className="modal-header">
               <img 
-                src={partidoSeleccionado.bandera_url || '/assets/par1.png'} 
+                src={partidoSeleccionado.bandera_url || '/par1.png'} 
                 alt={`Bandera ${partidoSeleccionado.nombre}`} 
                 className="modal-bandera"
+                // Si la imagen de la BD está rota, muestra la local automáticamente
+                onError={(e) => {
+                  e.target.onerror = null; 
+                  e.target.src = '/par1.png'; 
+                }}
               />
               <div className="modal-header-info">
                 <h2>{partidoSeleccionado.nombre}</h2>

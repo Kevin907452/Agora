@@ -8,12 +8,13 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
-  "framer-motion": "^12.23.0",
-  "lucide-react": "^0.468.0",
-  "react": "^19.1.0",
-  "react-dom": "^19.1.0",
-  "react-router-dom": "^7.8.0",
-  "webpack-cli": "^6.0.1"
+    "framer-motion": "^12.23.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.8.0",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^6.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -23,8 +24,6 @@
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.3",
     "style-loader": "^4.0.0",
-    "webpack": "^5.111.1",
-    "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.6"
   }
 }

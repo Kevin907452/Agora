@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import './partidos.css';
 
+// IMPORTAMOS LAS IMÁGENES DESDE src/assets
+import par1 from '../assets/par1.png';
+import par2 from '../assets/par2.png';
+import par3 from '../assets/par3.png';
+import par4 from '../assets/par4.png';
+
 export function Card({ partido, onClick }) {
   if (!partido) return null;
 
-  // Si la base de datos tiene la ruta, la usamos. Si no, usamos una por defecto.
-  let rutaImagen = '/par1.png'; 
-  if (partido.bandera_url) {
-    if (partido.bandera_url.startsWith('data:image') || partido.bandera_url.startsWith('http')) {
-      rutaImagen = partido.bandera_url;
-    } else if (partido.bandera_url.startsWith('/')) {
-      rutaImagen = partido.bandera_url;
-    } else {
-      rutaImagen = `/${partido.bandera_url}`;
-    }
-  }
+  // Lógica para asignar la imagen correcta según el ID del partido
+  let rutaImagen = par1; 
+  if (partido.id_partido === 2) rutaImagen = par2;
+  if (partido.id_partido === 3) rutaImagen = par3;
+  if (partido.id_partido === 4) rutaImagen = par4;
 
   return (
     <div 
@@ -45,7 +45,6 @@ export default function PartidosSection() {
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   useEffect(() => {
-    // ⚠️ RUTA RELATIVA VITAL PARA QUE FUNCIONE EN RENDER
     fetch('/api/partidos')
       .then((res) => {
         if (!res.ok) throw new Error(`Servidor devolvió status ${res.status}`);
@@ -114,10 +113,13 @@ export default function PartidosSection() {
             
             <div className="modal-header">
               <img 
-                src={partidoSeleccionado.bandera_url || '/par1.png'} 
+                src={
+                  partidoSeleccionado.id_partido === 1 ? par1 : 
+                  partidoSeleccionado.id_partido === 2 ? par2 : 
+                  partidoSeleccionado.id_partido === 3 ? par3 : par4
+                } 
                 alt={`Bandera ${partidoSeleccionado.nombre}`} 
                 className="modal-bandera"
-                onError={(e) => { e.target.onerror = null; e.target.src = '/par1.png'; }}
               />
               <div className="modal-header-info">
                 <h2>{partidoSeleccionado.nombre}</h2>

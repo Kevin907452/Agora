@@ -1,16 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App'; // o tu componente principal de rutas
+import App from './App.jsx';
 import './index.css';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
-const container = document.getElementById('root');
-
-// Verificamos si ya existe una raíz para no duplicarla
-if (!container._reactRootContainer) {
-  const root = ReactDOM.createRoot(container);
-  root.render(
-    <React.StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <GoogleOAuthProvider clientId="801082715265-u9p0lg3ipjcg7tl6h7tb806qlgm72jb.apps.googleusercontent.com">
       <App />
-    </React.StrictMode>
-  );
-}
+    </GoogleOAuthProvider>
+  </React.StrictMode>,
+);

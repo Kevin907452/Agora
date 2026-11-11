@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 import agorita from "../assets/agorita.png";
+import { GoogleLogin } from "@react-oauth/google";
 
 function Login() {
     const navigate = useNavigate();
@@ -29,79 +30,18 @@ function Login() {
     };
 
     // =========================================================
-    // GOOGLE IDENTITY SERVICES + RENDERIZADO OFICIAL
+    // NUEVA API DE GOOGLE (Recibe el token y lo manda al backend)
     // =========================================================
-    useEffect(() => {
-        const inicializarGoogle = () => {
-            if (window.google) {
-                window.google.accounts.id.initialize({
-                    client_id: "801082715265-u9p0lg3ipqjcg7tl6h7tb806qlgm72jb.apps.googleusercontent.com",
-                    callback: manejarRespuestaGoogle,
-                    auto_select: false,
-                    use_fedcm_for_prompt: false // Desactiva FedCM para evitar restricciones locales
-                });
-
-                // Renderizamos el botón oficial en el div con id "googleBtnContainer"
-                const btnContainer = document.getElementById("googleBtnContainer");
-                if (btnContainer) {
-                    window.google.accounts.id.renderButton(
-                        btnContainer,
-                        {
-                            theme: "outline",
-                            size: "large",
-                            text: "continue_with",
-                            shape: "rectangular",
-                            width: "100%"
-                        }
-                    );
-                }
-            }
-        };
-
-        if (window.google) {
-            inicializarGoogle();
-        } else {
-            let script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
-            if (!script) {
-                script = document.createElement("script");
-                script.src = "https://accounts.google.com/gsi/client";
-                script.async = true;
-                script.defer = true;
-                document.head.appendChild(script);
-            }
-            script.onload = inicializarGoogle;
-        }
-    }, [modo]); // Se vuelve a renderizar si se cambia el modo
-
-    const manejarRespuestaGoogle = async (response) => {
+    const manejarRespuestaGoogle = async (credentialResponse) => {
         try {
             setLoading(true);
             setError("");
 
-            // Decodificar el token JWT de Google
-            const base64Url = response.credential.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-
-            const datosGoogle = JSON.parse(jsonPayload);
-            const correoLimpio = datosGoogle.email.trim().toLowerCase();
-
-            // REGLA: Si el correo termina exactamente en @cedesdonbosco.ed.cr (y NO en @est.cedesdonbosco.ed.cr) -> Profesor
-            // Cualquier otro correo que ingrese será considerado Estudiante.
-            const esProfesor = correoLimpio.endsWith("@cedesdonbosco.ed.cr") && !correoLimpio.endsWith("@est.cedesdonbosco.ed.cr");
-            const rolAsignado = esProfesor ? "profesor" : "estudiante";
-
-            const res = await fetch("http://localhost:3000/api/google-login", {
+            // Enviamos el token JWT al backend para que lo verifique de forma segura
+            const res = await fetch("/api/google-login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    correo: correoLimpio,
-                    nombre: datosGoogle.given_name || "Usuario",
-                    apellido: datosGoogle.family_name || "Ágora",
-                    rol: rolAsignado
-                }),
+                body: JSON.stringify({ credential: credentialResponse.credential }),
             });
 
             const data = await res.json();
@@ -116,7 +56,7 @@ function Login() {
                 if (data.usuario.rol === "profesor") {
                     navigate("/indexprofesor");
                 } else {
-                    navigate("/indexestudiante"); // Redirige a perfil de estudiante por defecto
+                    navigate("/indexestudiante");
                 }
             }, 1000);
 
@@ -140,7 +80,6 @@ function Login() {
 
         const correoLimpio = correo.trim().toLowerCase();
         
-        // Si no selecciona rol manualmente en el formulario, aplica la misma regla por defecto
         let rolCalculado = rol;
         if (!rolCalculado) {
             const esProfesor = correoLimpio.endsWith("@cedesdonbosco.ed.cr") && !correoLimpio.endsWith("@est.cedesdonbosco.ed.cr");
@@ -154,7 +93,7 @@ function Login() {
 
         try {
             setLoading(true);
-            const response = await fetch("http://localhost:3000/api/usuarios", {
+            const response = await fetch("/api/usuarios", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -198,7 +137,7 @@ function Login() {
 
         try {
             setLoading(true);
-            const response = await fetch("http://localhost:3000/api/login", {
+            const response = await fetch("/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ correo: correo.trim(), contrasena }),
@@ -264,8 +203,19 @@ function Login() {
                             <p>{modo === "login" ? "Ingresa a tu cuenta para continuar" : "Regístrate para comenzar a utilizar Ágora"}</p>
                         </div>
 
-                        {/* CONTENEDOR DONDE GOOGLE RENDERIZA SU BOTÓN OFICIAL */}
-                        <div id="googleBtnContainer"></div>
+                        {/* NUEVO BOTÓN DE GOOGLE ESTIRADO AL 100% */}
+                        <div style={{ width: "100%", display: "flex", justifyContent: "center", marginBottom: "15px" }}>
+                            <GoogleLogin
+                                onSuccess={manejarRespuestaGoogle}
+                                onError={() => setError("Error al iniciar sesión con Google.")}
+                                ux_mode="redirect"
+                                width="100%"
+                                theme="outline"
+                                size="large"
+                                text="continue_with"
+                                shape="rectangular"
+                            />
+                        </div>
 
                         <div className="separator" style={{ margin: "15px 0" }}>
                             <span></span>
@@ -338,19 +288,6 @@ function Login() {
                                 )}
                             </button>
                         </form>
-
-                        <div className="guest-container">
-                            <div className="separator">
-                                <span></span>
-                                <p>o</p>
-                                <span></span>
-                            </div>
-                          
-                        </div>
-
-                        <div className="login-footer">
-                            
-                        </div>
                     </div>
                 </section>
             </div>

@@ -19,19 +19,20 @@ function Login() {
     const [error, setError] = useState("");
     const [mensaje, setMensaje] = useState("");
 
-    // =========================================================
-    // CAPTURAR EL CÓDIGO DE GOOGLE AL VOLVER DE LA REDIRECCIÓN
-    // =========================================================
+    const cambiarModo = (nuevoModo) => {
+        setModo(nuevoModo);
+        setError(""); setMensaje("");
+        setNombre(""); setApellido(""); setCorreo(""); setContrasena(""); setRol("");
+    };
+
+    // Lógica para capturar el código de Google al volver
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const code = params.get('code');
 
         if (code) {
-            // Limpiamos la URL para que no se quede el código colgado
             window.history.replaceState({}, document.title, window.location.pathname);
-            
-            setLoading(true);
-            setMensaje("Verificando con Google...");
+            setLoading(true); setMensaje("Verificando con Google...");
 
             fetch('/api/google-login', {
                 method: 'POST',
@@ -41,26 +42,16 @@ function Login() {
             .then(res => res.json())
             .then(data => {
                 if (!data.token) throw new Error(data.mensaje || "Error en autenticación.");
-                
                 localStorage.setItem("usuario", JSON.stringify(data.usuario));
                 localStorage.setItem("agora_token", data.token);
-                
                 if (data.usuario.rol === 'profesor') navigate('/indexprofesor');
                 else navigate('/indexestudiante');
             })
             .catch(err => {
-                console.error(err);
-                setError(err.message);
-                setLoading(false);
+                console.error(err); setError(err.message); setLoading(false);
             });
         }
     }, [location, navigate]);
-
-    const cambiarModo = (nuevoModo) => {
-        setModo(nuevoModo);
-        setError("");
-        setMensaje("");
-    };
 
     const handleRegistro = async (e) => {
         e.preventDefault();
@@ -134,11 +125,11 @@ function Login() {
                             <p>{modo === "login" ? "Ingresa a tu cuenta para continuar" : "Regístrate para utilizar Ágora"}</p>
                         </div>
 
-                        {/* BOTÓN DE GOOGLE ESTIRADO Y CENTRADO */}
+                        {/* BOTÓN DE GOOGLE (Estirado y centrado) */}
                         <div style={{ width: "100%", display: "flex", justifyContent: "center", marginBottom: "15px" }}>
                             <GoogleLogin
-                                onSuccess={() => {}} // No se usa en modo redirect
-                                onError={() => setError("Error con Google.")}
+                                onSuccess={() => {}} // No se usa aquí porque usamos redirección
+                                onError={() => setError("Error al conectar con Google.")}
                                 ux_mode="redirect"
                                 width="380"
                                 theme="outline"
@@ -153,25 +144,57 @@ function Login() {
                         <form onSubmit={modo === "login" ? handleLogin : handleRegistro}>
                             {modo === "registro" && (
                                 <>
-                                    <div className="form-group"><label>Nombre</label><input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-                                    <div className="form-group"><label>Apellido</label><input type="text" value={apellido} onChange={(e) => setApellido(e.target.value)} /></div>
+                                    <div className="form-group">
+                                        <label htmlFor="nombre">Nombre</label>
+                                        <div className="input-container">
+                                            <input id="nombre" type="text" placeholder="Ingresa tu nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="apellido">Apellido</label>
+                                        <div className="input-container">
+                                            <input id="apellido" type="text" placeholder="Ingresa tu apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} />
+                                        </div>
+                                    </div>
                                 </>
                             )}
 
-                            <div className="form-group"><label>Correo electrónico</label><input type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} /></div>
                             <div className="form-group">
-                                <label>Contraseña</label>
+                                <label htmlFor="correo">Correo electrónico</label>
                                 <div className="input-container">
-                                    <input type={mostrarContrasena ? "text" : "password"} value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
-                                    <button type="button" onClick={() => setMostrarContrasena(!mostrarContrasena)}>{mostrarContrasena ? "👁" : "👁‍🗨"}</button>
+                                    <input id="correo" type="email" placeholder="tu.correo@cedesdonbosco.ed.cr" value={correo} onChange={(e) => setCorreo(e.target.value)} />
                                 </div>
                             </div>
+
+                            <div className="form-group">
+                                <label htmlFor="contrasena">Contraseña</label>
+                                <div className="input-container">
+                                    <input id="contrasena" type={mostrarContrasena ? "text" : "password"} placeholder="Ingresa tu contraseña" value={contrasena} onChange={(e) => setContrasena(e.target.value)} />
+                                    <button type="button" className="show-password" onClick={() => setMostrarContrasena(!mostrarContrasena)}>
+                                        {mostrarContrasena ? "👁" : "👁‍🗨"}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {modo === "registro" && (
+                                <div className="form-group">
+                                    <label htmlFor="rol">Rol (Opcional)</label>
+                                    <div className="input-container">
+                                        <select id="rol" value={rol} onChange={(e) => setRol(e.target.value)}>
+                                            <option value="">Detectar automáticamente</option>
+                                            <option value="estudiante">Estudiante</option>
+                                            <option value="profesor">Profesor</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
 
                             {error && <div className="login-error">{error}</div>}
                             {mensaje && <div className="login-success">{mensaje}</div>}
 
                             <button type="submit" className="login-button" disabled={loading}>
                                 {loading ? "Procesando..." : (modo === "login" ? "Iniciar sesión" : "Crear cuenta")}
+                                <span className="arrow">→</span>
                             </button>
                         </form>
                     </div>

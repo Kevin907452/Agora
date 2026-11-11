@@ -1,22 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import './partidos.css';
 
-// Componente Tarjeta Individual
 export function Card({ partido, onClick }) {
   if (!partido) return null;
 
-  // Lógica mejorada para la ruta de la imagen
-  let rutaImagen = '/par1.png'; // Imagen por defecto (en la carpeta public)
-
+  // Si la base de datos tiene la ruta, la usamos. Si no, usamos una por defecto.
+  let rutaImagen = '/par1.png'; 
   if (partido.bandera_url) {
     if (partido.bandera_url.startsWith('data:image') || partido.bandera_url.startsWith('http')) {
-      // Es Base64 o un enlace externo (HTTP)
       rutaImagen = partido.bandera_url;
     } else if (partido.bandera_url.startsWith('/')) {
-      // Ya tiene la barra (ej: /par2.png)
       rutaImagen = partido.bandera_url;
     } else {
-      // Tiene solo el nombre (ej: par2.png)
       rutaImagen = `/${partido.bandera_url}`;
     }
   }
@@ -41,31 +36,24 @@ export function Card({ partido, onClick }) {
   );
 }
 
-// Componente Principal
 export default function PartidosSection() {
   const [partidos, setPartidos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-
-  // Estados para el Modal
   const [partidoSeleccionado, setPartidoSeleccionado] = useState(null);
   const [detallePartido, setDetallePartido] = useState({ miembros: [], propuestas: [] });
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
-  // Cargar lista general de partidos
   useEffect(() => {
-    // ⚠️ IMPORTANTE: Cambiado de http://localhost:3000 a ruta relativa /api
+    // ⚠️ RUTA RELATIVA VITAL PARA QUE FUNCIONE EN RENDER
     fetch('/api/partidos')
       .then((res) => {
         if (!res.ok) throw new Error(`Servidor devolvió status ${res.status}`);
         return res.json();
       })
       .then((data) => {
-        if (Array.isArray(data)) {
-          setPartidos(data);
-        } else {
-          setErrorMsg('Formato de datos no válido.');
-        }
+        if (Array.isArray(data)) setPartidos(data);
+        else setErrorMsg('Formato de datos no válido.');
         setCargando(false);
       })
       .catch((err) => {
@@ -75,12 +63,10 @@ export default function PartidosSection() {
       });
   }, []);
 
-  // Abrir Modal y cargar detalles (miembros y propuestas)
   const abrirModal = (partido) => {
     setPartidoSeleccionado(partido);
     setCargandoDetalle(true);
 
-    // ⚠️ IMPORTANTE: Cambiado de http://localhost:3000 a ruta relativa /api
     fetch(`/api/partidos/${partido.id_partido}`)
       .then((res) => res.json())
       .then((data) => {
@@ -116,16 +102,11 @@ export default function PartidosSection() {
           <p style={{ color: '#4a386d' }}>No hay partidos registrados en la base de datos.</p>
         ) : (
           partidos.map((partido) => (
-            <Card 
-              key={partido.id_partido} 
-              partido={partido} 
-              onClick={abrirModal} 
-            />
+            <Card key={partido.id_partido} partido={partido} onClick={abrirModal} />
           ))
         )}
       </div>
 
-      {/* MODAL WAZAAAAAAAAAAAAA */}
       {partidoSeleccionado && (
         <div className="modal-overlay" onClick={cerrarModal}>
           <div className="modal-container" onClick={(e) => e.stopPropagation()}>
@@ -136,11 +117,7 @@ export default function PartidosSection() {
                 src={partidoSeleccionado.bandera_url || '/par1.png'} 
                 alt={`Bandera ${partidoSeleccionado.nombre}`} 
                 className="modal-bandera"
-                // Si la imagen de la BD está rota, muestra la local automáticamente
-                onError={(e) => {
-                  e.target.onerror = null; 
-                  e.target.src = '/par1.png'; 
-                }}
+                onError={(e) => { e.target.onerror = null; e.target.src = '/par1.png'; }}
               />
               <div className="modal-header-info">
                 <h2>{partidoSeleccionado.nombre}</h2>
@@ -153,7 +130,6 @@ export default function PartidosSection() {
                 <p className="loading-text">Cargando información del partido...</p>
               ) : (
                 <>
-                  {/* SECCIÓN DE INTEGRANTES DE LA DIRECTIVA */}
                   <div className="modal-seccion">
                     <h3>Candidatos a la directiva-----</h3>
                     {detallePartido.miembros.length === 0 ? (
@@ -171,7 +147,6 @@ export default function PartidosSection() {
                     )}
                   </div>
 
-                  {/* propuestas insanas */}
                   <div className="modal-seccion">
                     <h3>Propuestas---</h3>
                     {detallePartido.propuestas.length === 0 ? (

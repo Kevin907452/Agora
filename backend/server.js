@@ -11,14 +11,14 @@ const app = express();
 // =========================================================
 // CONFIGURACIÓN CRÍTICA PARA RENDER Y GOOGLE AUTH
 // =========================================================
-// 1. Confiar en el proxy de Render para generar URLs HTTPS correctas
+// 1. Confiar en el proxy de Render (necesario para HTTPS)
 app.set('trust proxy', 1);
 
-// 2. Middleware para permitir la comunicación con Google y evitar bloqueos
+// 2. Middleware para permitir la comunicación de la ventana de Google
 app.use((req, res, next) => {
-    // Permite que la ventana emergente de Google se comunique con tu app
+    // Permite que el popup de Google se comunique con tu página sin bloquearse
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    // Asegura que no se envíe una política de referencia restrictiva
+    // Asegura que se envíe el origen correcto a Google
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     next();
 });

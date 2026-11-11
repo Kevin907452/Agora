@@ -35,7 +35,7 @@ function Login() {
         const inicializarGoogle = () => {
             if (window.google) {
                 window.google.accounts.id.initialize({
-                    client_id: "31538646789-jk676j5ar99fvhht754vk3f9e3avudv4.apps.googleusercontent.com",
+                    client_id: "801082715265-u9p0lg3ipqjcg7tl6h7tb806qlgm72jb.apps.googleusercontent.com",
                     callback: manejarRespuestaGoogle,
                     auto_select: false,
                     use_fedcm_for_prompt: false // Desactiva FedCM para evitar restricciones locales

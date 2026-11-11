@@ -4,6 +4,8 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const db = require("./db");
 const path = require("path");
+const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library'); // <-- NUEVA LIBRERÍA
 
 dotenv.config();
 const app = express();
@@ -11,29 +13,24 @@ const app = express();
 // =========================================================
 // CONFIGURACIÓN CRÍTICA PARA RENDER Y GOOGLE AUTH
 // =========================================================
-// 1. Confiar en el proxy de Render (necesario para HTTPS)
 app.set('trust proxy', 1);
 
-// 2. Middleware para permitir la comunicación de la ventana de Google
 app.use((req, res, next) => {
-    // Permite que el popup de Google se comunique con tu página sin bloquearse
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    // Asegura que se envíe el origen correcto a Google
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     next();
 });
 
-// =========================================================
-// MIDDLEWARES GENERALES
-// =========================================================
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+// Inicializar el cliente de Google
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 // =========================================================
 // REGISTRO Y LOGIN DE USUARIOS
 // =========================================================
-const crypto = require('crypto');
 const sessionSecret = process.env.SESSION_SECRET;
 
 function crearToken(usuario) {
@@ -54,6 +51,66 @@ function leerToken(req){
     try{const data=JSON.parse(Buffer.from(payload,'base64url').toString());return data.exp>Date.now()?data:null;}catch{return null}
 }
 
+// =========================================================
+// NUEVA RUTA DE GOOGLE LOGIN (Flujo seguro por redirección)
+// =========================================================
+app.post('/api/google-login', async (req, res) => {
+    try {
+        const { code } = req.body || {};
+        if (!code) return res.status(400).json({ mensaje: 'Falta el código de autorización.' });
+
+        // Canjeamos el código por los tokens de Google
+        const { tokens } = await googleClient.getToken({
+            code,
+            redirect_uri: 'https://agora-tih9.onrender.com' // Debe coincidir con Google Cloud
+        });
+
+        // Verificamos la identidad del usuario
+        const ticket = await googleClient.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        
+        const payload = ticket.getPayload();
+        const { email, given_name, family_name } = payload;
+        
+        const correoLimpio = email.trim().toLowerCase();
+        const esProfesor = correoLimpio.endsWith("@cedesdonbosco.ed.cr") && !correoLimpio.endsWith("@est.cedesdonbosco.ed.cr");
+        const rolCalculado = esProfesor ? "profesor" : "estudiante";
+
+        const resultadoBusqueda = await db.query(`
+            SELECT id_usuario, nombre, apellido, correo, rol, activo 
+            FROM usuario WHERE LOWER(correo) = LOWER($1) LIMIT 1
+        `, [correoLimpio]);
+
+        let usuario;
+
+        if (resultadoBusqueda.rows.length > 0) {
+            usuario = resultadoBusqueda.rows[0];
+            if (usuario.activo === false) return res.status(403).json({ mensaje: "Tu cuenta se encuentra desactivada." });
+        } else {
+            const contrasenaAleatoria = crypto.randomBytes(16).toString("hex");
+            const hashContrasena = await bcrypt.hash(contrasenaAleatoria, 10);
+
+            const nuevoUsuarioRes = await db.query(`
+                INSERT INTO usuario (nombre, apellido, correo, contrasena, rol, activo) 
+                VALUES ($1, $2, $3, $4, $5, true) 
+                RETURNING id_usuario, nombre, apellido, correo, rol, activo;
+            `, [given_name || "Usuario", family_name || "Ágora", correoLimpio, hashContrasena, rolCalculado]);
+
+            usuario = nuevoUsuarioRes.rows[0];
+        }
+
+        res.json({ mensaje: "Inicio de sesión con Google exitoso", usuario, token: crearToken(usuario) });
+    } catch (error) {
+        console.error("Error en /api/google-login:", error);
+        res.status(500).json({ mensaje: "Error interno al procesar Google Login.", detalle: error.message });
+    }
+});
+
+// =========================================================
+// RUTAS DE LOGIN Y REGISTRO NORMALES
+// =========================================================
 app.post('/api/login',async(req,res)=>{
   try{
     const {correo,contrasena}=req.body||{};
@@ -69,39 +126,21 @@ app.post('/api/login',async(req,res)=>{
 app.post("/api/usuarios", async (req, res) => {
     try {
         const { nombre, apellido, correo, contrasena, rol } = req.body;
+        if (!nombre || !apellido || !correo || !contrasena || !rol) return res.status(400).json({ mensaje: "Todos los campos son obligatorios." });
+        if (rol !== "estudiante" && rol !== "profesor") return res.status(400).json({ mensaje: "El rol seleccionado no es válido." });
 
-        if (!nombre || !apellido || !correo || !contrasena || !rol) {
-            return res.status(400).json({ mensaje: "Todos los campos son obligatorios." });
-        }
-
-        if (rol !== "estudiante" && rol !== "profesor") {
-            return res.status(400).json({ mensaje: "El rol seleccionado no es válido." });
-        }
-
-        const usuarioExistente = await db.query(
-            `SELECT id_usuario FROM usuario WHERE correo = $1`,
-            [correo]
-        );
-
-        if (usuarioExistente.rows.length > 0) {
-            return res.status(409).json({ mensaje: "Ya existe un usuario con ese correo." });
-        }
+        const usuarioExistente = await db.query(`SELECT id_usuario FROM usuario WHERE correo = $1`, [correo]);
+        if (usuarioExistente.rows.length > 0) return res.status(409).json({ mensaje: "Ya existe un usuario con ese correo." });
 
         const contrasenaEncriptada = await bcrypt.hash(contrasena, 10);
 
-        const resultado = await db.query(
-            `
+        const resultado = await db.query(`
             INSERT INTO usuario (nombre, apellido, correo, contrasena, proveedor, rol)
             VALUES ($1, $2, $3, $4, 'local', $5)
             RETURNING id_usuario, nombre, apellido, correo, rol, avatar_id, activo, fecha_registro
-            `,
-            [nombre, apellido, correo, contrasenaEncriptada, rol]
-        );
+            `, [nombre, apellido, correo, contrasenaEncriptada, rol]);
 
-        res.status(201).json({
-            mensaje: "Usuario registrado correctamente.",
-            usuario: resultado.rows[0]
-        });
+        res.status(201).json({ mensaje: "Usuario registrado correctamente.", usuario: resultado.rows[0] });
     } catch (error) {
         console.error("Error registrando usuario:", error);
         res.status(500).json({ mensaje: "Error al registrar el usuario.", detalle: error.message });
@@ -111,37 +150,20 @@ app.post("/api/usuarios", async (req, res) => {
 app.post("/api/registro", async (req, res) => {
     try {
         const { nombre, apellido, correo, contrasena, rol } = req.body;
+        if (!nombre || !apellido || !correo || !contrasena || !rol) return res.status(400).json({ error: "Todos los campos son obligatorios" });
+        if (rol !== "estudiante" && rol !== "profesor") return res.status(400).json({ error: "El rol debe ser estudiante o profesor" });
 
-        if (!nombre || !apellido || !correo || !contrasena || !rol) {
-            return res.status(400).json({ error: "Todos los campos son obligatorios" });
-        }
-
-        if (rol !== "estudiante" && rol !== "profesor") {
-            return res.status(400).json({ error: "El rol debe ser estudiante o profesor" });
-        }
-
-        const usuarioExistente = await db.query(
-            `SELECT id_usuario FROM usuario WHERE correo = $1`,
-            [correo]
-        );
-
-        if (usuarioExistente.rows.length > 0) {
-            return res.status(400).json({ error: "El correo ya está registrado" });
-        }
+        const usuarioExistente = await db.query(`SELECT id_usuario FROM usuario WHERE correo = $1`, [correo]);
+        if (usuarioExistente.rows.length > 0) return res.status(400).json({ error: "El correo ya está registrado" });
 
         const hash = await bcrypt.hash(contrasena, 10);
-
-        const resultado = await db.query(
-            `INSERT INTO usuario (nombre, apellido, correo, contrasena, rol)
+        const resultado = await db.query(`
+             INSERT INTO usuario (nombre, apellido, correo, contrasena, rol)
              VALUES ($1, $2, $3, $4, $5)
-             RETURNING id_usuario, nombre, apellido, correo, rol, fecha_registro`,
-            [nombre, apellido, correo, hash, rol]
-        );
+             RETURNING id_usuario, nombre, apellido, correo, rol, fecha_registro
+            `, [nombre, apellido, correo, hash, rol]);
 
-        res.status(201).json({
-            mensaje: "Usuario registrado correctamente",
-            usuario: resultado.rows[0]
-        });
+        res.status(201).json({ mensaje: "Usuario registrado correctamente", usuario: resultado.rows[0] });
     } catch (error) {
         console.error("Error registrando usuario:", error);
         res.status(500).json({ error: "Error al registrar usuario", detalle: error.message });
@@ -155,9 +177,7 @@ app.get("/api/estudiantes", async (req, res) => {
     try {
         const resultado = await db.query(`
             SELECT id_usuario, nombre, apellido, correo, rol, avatar_id, activo, fecha_registro, ultimo_acceso
-            FROM usuario
-            WHERE rol = 'estudiante'
-            ORDER BY id_usuario ASC
+            FROM usuario WHERE rol = 'estudiante' ORDER BY id_usuario ASC
         `);
         res.json(resultado.rows);
     } catch (error) {
@@ -169,16 +189,12 @@ app.get("/api/estudiantes", async (req, res) => {
 app.get("/api/estudiantes/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const estudiante = await db.query(
-            `SELECT id_usuario, nombre, apellido, correo, rol, avatar_id, activo, fecha_registro 
-             FROM usuario 
-             WHERE id_usuario = $1 AND rol = 'estudiante'`,
-            [id]
-        );
+        const estudiante = await db.query(`
+             SELECT id_usuario, nombre, apellido, correo, rol, avatar_id, activo, fecha_registro 
+             FROM usuario WHERE id_usuario = $1 AND rol = 'estudiante'
+        `, [id]);
 
-        if (estudiante.rows.length === 0) {
-            return res.status(404).json({ error: "Estudiante no encontrado" });
-        }
+        if (estudiante.rows.length === 0) return res.status(404).json({ error: "Estudiante no encontrado" });
         res.json(estudiante.rows[0]);
     } catch (error) {
         console.error("Error al obtener estudiante por ID:", error);
@@ -191,18 +207,13 @@ app.put("/api/estudiantes/:id", async (req, res) => {
     const { nombre, apellido, correo } = req.body;
 
     try {
-        const resultado = await db.query(
-            `UPDATE usuario 
-             SET nombre = $1, apellido = $2, correo = $3 
+        const resultado = await db.query(`
+             UPDATE usuario SET nombre = $1, apellido = $2, correo = $3 
              WHERE id_usuario = $4 AND rol = 'estudiante'
-             RETURNING id_usuario, nombre, apellido, correo`,
-            [nombre, apellido, correo, id]
-        );
+             RETURNING id_usuario, nombre, apellido, correo
+        `, [nombre, apellido, correo, id]);
 
-        if (resultado.rows.length === 0) {
-            return res.status(404).json({ error: "Estudiante no encontrado." });
-        }
-
+        if (resultado.rows.length === 0) return res.status(404).json({ error: "Estudiante no encontrado." });
         res.json({ mensaje: "Estudiante actualizado correctamente.", estudiante: resultado.rows[0] });
     } catch (error) {
         console.error("Error al actualizar estudiante:", error);
@@ -234,10 +245,9 @@ app.delete("/api/estudiantes/:id", async (req, res) => {
         `, [id]);
         await queryRunner.query(`DELETE FROM conversacion_chat WHERE usuario = $1`, [id]);
 
-        const resultado = await queryRunner.query(
-            `DELETE FROM usuario WHERE id_usuario = $1 AND rol = 'estudiante' RETURNING id_usuario`,
-            [id]
-        );
+        const resultado = await queryRunner.query(`
+            DELETE FROM usuario WHERE id_usuario = $1 AND rol = 'estudiante' RETURNING id_usuario
+        `, [id]);
 
         if (resultado.rows.length === 0) {
             if (client) await client.query("ROLLBACK");
@@ -265,8 +275,7 @@ app.get("/api/formulario", async (req, res) => {
         const estudiantesRes = await db.query(`SELECT id_usuario, nombre, apellido FROM usuario WHERE rol = 'estudiante' ORDER BY apellido ASC`);
         const membresiasRes = await db.query(`
             SELECT m.id_estudiante, m.id_partido, p.gobierno_id, p.nombre AS partido 
-            FROM miembro_partido m
-            JOIN partido_politico p ON m.id_partido = p.id_partido
+            FROM miembro_partido m JOIN partido_politico p ON m.id_partido = p.id_partido
         `);
         const partidosRes = await db.query(`
             SELECT p.id_partido, p.nombre, p.descripcion, p.bandera_url, g.nombre AS gobierno,
@@ -279,11 +288,8 @@ app.get("/api/formulario", async (req, res) => {
 
         res.json({
             baseDeDatos: process.env.DB_NAME || "agora",
-            gobiernos: gobiernosRes.rows,
-            profesores: profesoresRes.rows,
-            estudiantes: estudiantesRes.rows,
-            membresias: membresiasRes.rows,
-            partidos: partidosRes.rows,
+            gobiernos: gobiernosRes.rows, profesores: profesoresRes.rows, estudiantes: estudiantesRes.rows,
+            membresias: membresiasRes.rows, partidos: partidosRes.rows,
             sinProfesores: profesoresRes.rows.length === 0
         });
     } catch (error) {
@@ -294,34 +300,28 @@ app.get("/api/formulario", async (req, res) => {
 
 app.post("/api/partidos", async (req, res) => {
     const { nombre, descripcion, gobierno_id, creador_id, bandera, miembros, propuestas } = req.body;
-
-    if (!nombre || !gobierno_id || !creador_id) {
-        return res.status(400).json({ error: "Faltan campos obligatorios para registrar el partido." });
-    }
+    if (!nombre || !gobierno_id || !creador_id) return res.status(400).json({ error: "Faltan campos obligatorios para registrar el partido." });
 
     const client = await (db.getClient ? db.getClient() : null);
     const queryRunner = client || db;
 
     try {
         if (client) await client.query("BEGIN");
-
         const banderaUrl = bandera ? bandera.datos : null;
 
-        const partidoRes = await queryRunner.query(
-            `INSERT INTO partido_politico (nombre, descripcion, gobierno_id, creador_id, bandera_url)
-             VALUES ($1, $2, $3, $4, $5) RETURNING id_partido, nombre, descripcion, bandera_url`,
-            [nombre, descripcion, gobierno_id, creador_id, banderaUrl]
-        );
+        const partidoRes = await queryRunner.query(`
+             INSERT INTO partido_politico (nombre, descripcion, gobierno_id, creador_id, bandera_url)
+             VALUES ($1, $2, $3, $4, $5) RETURNING id_partido, nombre, descripcion, bandera_url
+        `, [nombre, descripcion, gobierno_id, creador_id, banderaUrl]);
 
         const nuevoPartido = partidoRes.rows[0];
 
         if (Array.isArray(miembros)) {
             for (const m of miembros) {
                 if (m.id_estudiante) {
-                    await queryRunner.query(
-                        `INSERT INTO miembro_partido (id_partido, id_estudiante, cargo) VALUES ($1, $2, $3)`,
-                        [nuevoPartido.id_partido, m.id_estudiante, m.cargo]
-                    );
+                    await queryRunner.query(`
+                        INSERT INTO miembro_partido (id_partido, id_estudiante, cargo) VALUES ($1, $2, $3)
+                    `, [nuevoPartido.id_partido, m.id_estudiante, m.cargo]);
                 }
             }
         }
@@ -329,32 +329,25 @@ app.post("/api/partidos", async (req, res) => {
         if (Array.isArray(propuestas)) {
             for (const p of propuestas) {
                 if (p.titulo && p.titulo.trim()) {
-                    await queryRunner.query(
-                        `INSERT INTO propuesta (id_partido, titulo, descripcion) VALUES ($1, $2, $3)`,
-                        [nuevoPartido.id_partido, p.titulo, p.descripcion]
-                    );
+                    await queryRunner.query(`
+                        INSERT INTO propuesta (id_partido, titulo, descripcion) VALUES ($1, $2, $3)
+                    `, [nuevoPartido.id_partido, p.titulo, p.descripcion]);
                 }
             }
         }
 
         if (client) await client.query("COMMIT");
 
-        const miembrosGuardados = await db.query(
-            `SELECT m.cargo, u.nombre || ' ' || u.apellido AS nombre 
-             FROM miembro_partido m JOIN usuario u ON m.id_estudiante = u.id_usuario WHERE m.id_partido = $1`,
-            [nuevoPartido.id_partido]
-        );
+        const miembrosGuardados = await db.query(`
+            SELECT m.cargo, u.nombre || ' ' || u.apellido AS nombre 
+             FROM miembro_partido m JOIN usuario u ON m.id_estudiante = u.id_usuario WHERE m.id_partido = $1
+        `, [nuevoPartido.id_partido]);
         const propuestasGuardadas = await db.query(`SELECT titulo, descripcion FROM propuesta WHERE id_partido = $1`, [nuevoPartido.id_partido]);
         const gobiernoGuardado = await db.query(`SELECT nombre FROM gobierno_estudiantil WHERE id_gobierno = $1`, [gobierno_id]);
 
         res.status(201).json({
             mensaje: "Partido registrado con éxito.",
-            partido: {
-                ...nuevoPartido,
-                gobierno: gobiernoGuardado.rows[0]?.nombre || `Gobierno ${gobierno_id}`,
-                miembros: miembrosGuardados.rows,
-                propuestas: propuestasGuardadas.rows
-            }
+            partido: { ...nuevoPartido, gobierno: gobiernoGuardado.rows[0]?.nombre || `Gobierno ${gobierno_id}`, miembros: miembrosGuardados.rows, propuestas: propuestasGuardadas.rows }
         });
 
     } catch (error) {
@@ -413,7 +406,7 @@ app.post("/api/votar", async (req, res) => {
 });
 
 // =========================================================
-// PROPUESTAS PARA EL QUIZ DE AFINIDAD
+// PROPUESTAS, EVENTOS, QUIZZES, MEDALLAS E IDEAS
 // =========================================================
 app.get("/api/propuestas", async (req, res) => {
     try {
@@ -425,9 +418,6 @@ app.get("/api/propuestas", async (req, res) => {
     }
 });
 
-// =========================================================
-// EVENTOS / CALENDARIO
-// =========================================================
 app.get("/api/eventos", async (req, res) => {
     try {
         const resultado = await db.query("SELECT id_evento, titulo, descripcion, fecha_inicio, fecha_fin, id_modulo FROM evento ORDER BY fecha_inicio ASC");
@@ -443,10 +433,9 @@ app.post("/api/eventos", async (req, res) => {
     if (!titulo || !fecha_inicio) return res.status(400).json({ error: "El título y la fecha de inicio son requeridos." });
 
     try {
-        const resultado = await db.query(
-            `INSERT INTO evento (titulo, descripcion, fecha_inicio, fecha_fin, id_modulo) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [titulo, descripcion || "", fecha_inicio, fecha_fin || fecha_inicio, id_modulo || null]
-        );
+        const resultado = await db.query(`
+            INSERT INTO evento (titulo, descripcion, fecha_inicio, fecha_fin, id_modulo) VALUES ($1, $2, $3, $4, $5) RETURNING *
+        `, [titulo, descripcion || "", fecha_inicio, fecha_fin || fecha_inicio, id_modulo || null]);
         res.status(201).json(resultado.rows[0]);
     } catch (error) {
         console.error("Error al crear evento:", error);
@@ -459,10 +448,9 @@ app.put("/api/eventos/:id", async (req, res) => {
     const { titulo, descripcion, fecha_inicio, fecha_fin, id_modulo } = req.body;
 
     try {
-        const resultado = await db.query(
-            `UPDATE evento SET titulo = $1, descripcion = $2, fecha_inicio = $3, fecha_fin = $4, id_modulo = $5 WHERE id_evento = $6 RETURNING *`,
-            [titulo, descripcion || "", fecha_inicio, fecha_fin || fecha_inicio, id_modulo || null, id]
-        );
+        const resultado = await db.query(`
+            UPDATE evento SET titulo = $1, descripcion = $2, fecha_inicio = $3, fecha_fin = $4, id_modulo = $5 WHERE id_evento = $6 RETURNING *
+        `, [titulo, descripcion || "", fecha_inicio, fecha_fin || fecha_inicio, id_modulo || null, id]);
         if (resultado.rows.length === 0) return res.status(404).json({ error: "Evento no encontrado." });
         res.json(resultado.rows[0]);
     } catch (error) {
@@ -483,9 +471,6 @@ app.delete("/api/eventos/:id", async (req, res) => {
     }
 });
 
-// =========================================================
-// CUESTIONARIOS, NOTAS Y MEDALLAS
-// =========================================================
 const catalogoCuestionarios = require('./quiz-catalog.json');
 
 async function asegurarIntentosEducativos(){
@@ -509,10 +494,9 @@ asegurarTablaMedallas().catch(console.error);
 
 async function verificarYOtorgarMedalla(clientOrDb, idEstudiante, idModulo, tituloModulo) {
   try {
-    await clientOrDb.query(
-      `INSERT INTO public.agora_medallas (id_estudiante, id_modulo, titulo_modulo) VALUES ($1, $2, $3) ON CONFLICT (id_estudiante, id_modulo) DO NOTHING`,
-      [idEstudiante, idModulo, tituloModulo]
-    );
+    await clientOrDb.query(`
+      INSERT INTO public.agora_medallas (id_estudiante, id_modulo, titulo_modulo) VALUES ($1, $2, $3) ON CONFLICT (id_estudiante, id_modulo) DO NOTHING
+    `, [idEstudiante, idModulo, tituloModulo]);
   } catch (err) { console.error("Error al otorgar medalla:", err); }
 }
 
@@ -522,13 +506,10 @@ app.post('/api/cuestionarios-educativos/entregar', async (req, res) => {
     if (!sesion) return res.status(401).json({ mensaje: 'Inicia sesión para guardar tu calificación.' });
     const usuario = await db.query('SELECT id_usuario,rol,activo FROM public.usuario WHERE id_usuario=$1', [sesion.id]);
     
-    if (!usuario.rows.length || !usuario.rows[0].activo || usuario.rows[0].rol !== 'estudiante') {
-      return res.status(403).json({ mensaje: 'Solo estudiantes pueden registrar estos cuestionarios.' });
-    }
+    if (!usuario.rows.length || !usuario.rows[0].activo || usuario.rows[0].rol !== 'estudiante') return res.status(403).json({ mensaje: 'Solo estudiantes pueden registrar estos cuestionarios.' });
     
     const { temaId, respuestas } = req.body || {};
-    let moduloEncontrado = null;
-    let temaEncontrado = null;
+    let moduloEncontrado = null; let temaEncontrado = null;
     
     for (const m of catalogoCuestionarios) {
       const t = m.topics.find(top => top.id === temaId);
@@ -536,18 +517,15 @@ app.post('/api/cuestionarios-educativos/entregar', async (req, res) => {
     }
 
     if (!temaEncontrado || !temaEncontrado.answers.length) return res.status(404).json({ mensaje: 'Cuestionario no disponible.' });
-    if (!Array.isArray(respuestas) || respuestas.length !== temaEncontrado.answers.length || respuestas.some(x => !Number.isInteger(x) || x < 0)) {
-      return res.status(400).json({ mensaje: 'Responde todas las preguntas antes de entregar.' });
-    }
+    if (!Array.isArray(respuestas) || respuestas.length !== temaEncontrado.answers.length || respuestas.some(x => !Number.isInteger(x) || x < 0)) return res.status(400).json({ mensaje: 'Responde todas las preguntas antes de entregar.' });
     
     const aciertos = temaEncontrado.answers.filter((correcta, i) => correcta === respuestas[i]).length;
     const porcentaje = Math.round(100 * aciertos / temaEncontrado.answers.length);
     
     await asegurarIntentosEducativos();
     const guardado = await db.query(`
-        INSERT INTO public.agora_intentos_educativos (id_estudiante, id_tema, nombre_quiz, aciertos, total, porcentaje)
-        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_intento, fecha`,
-        [sesion.id, temaId, `${temaEncontrado.modulo} · ${temaEncontrado.title}`, aciertos, temaEncontrado.answers.length, porcentaje]);
+        INSERT INTO public.agora_intentos_educativos (id_estudiante, id_tema, nombre_quiz, aciertos, total, porcentaje) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_intento, fecha
+    `, [sesion.id, temaId, `${temaEncontrado.modulo} · ${temaEncontrado.title}`, aciertos, temaEncontrado.answers.length, porcentaje]);
 
     const quizesModulo = moduloEncontrado.topics.filter(t => t.type === 'quiz');
     const ultimoQuizModulo = quizesModulo[quizesModulo.length - 1];
@@ -597,10 +575,8 @@ app.get('/api/notas', async (req, res) => {
     await asegurarIntentosEducativos();
     const nuevos = (await db.query(`
       SELECT a.id_intento, a.id_estudiante, a.nombre_quiz AS quiz, a.porcentaje, a.porcentaje AS nota, a.fecha, u.nombre, u.apellido, u.correo,
-      (SELECT COUNT(*)::int FROM public.agora_intentos_educativos b
-        WHERE b.id_estudiante=a.id_estudiante AND b.id_tema=a.id_tema AND b.fecha<=a.fecha) AS intentos
-      FROM public.agora_intentos_educativos a
-      JOIN public.usuario u ON u.id_usuario=a.id_estudiante
+      (SELECT COUNT(*)::int FROM public.agora_intentos_educativos b WHERE b.id_estudiante=a.id_estudiante AND b.id_tema=a.id_tema AND b.fecha<=a.fecha) AS intentos
+      FROM public.agora_intentos_educativos a JOIN public.usuario u ON u.id_usuario=a.id_estudiante
       ${profesor ? '' : 'WHERE a.id_estudiante=$1'} ORDER BY a.fecha DESC`, profesor ? [] : [id])).rows;
       
     res.json([...nuevos, ...anteriores]);
@@ -633,14 +609,10 @@ app.get('/api/medallas', async (req, res) => {
   }
 });
 
-// =========================================================
-// ENDPOINTS PARA LA CAJA DE IDEAS
-// =========================================================
 app.get("/api/usuarios", async (req, res) => {
     try {
         const resultado = await db.query(`
-            SELECT id_usuario, nombre, apellido, correo, rol, COALESCE(avatar_id, 1) AS avatar_id, activo, fecha_registro
-            FROM usuario ORDER BY id_usuario ASC
+            SELECT id_usuario, nombre, apellido, correo, rol, COALESCE(avatar_id, 1) AS avatar_id, activo, fecha_registro FROM usuario ORDER BY id_usuario ASC
         `);
         res.json({ modo: "bd", baseDeDatos: process.env.DB_NAME || "agora", motivo: "", usuarios: resultado.rows });
     } catch (error) {
@@ -653,9 +625,7 @@ app.get("/api/ideas", async (req, res) => {
     try {
         const ideasRes = await db.query(`
             SELECT i.id_idea, i.id_usuario, i.comentario, i.fecha, u.nombre, u.apellido, u.rol, COALESCE(u.avatar_id, 1) AS avatar_id
-            FROM caja_ideas i
-            JOIN usuario u ON i.id_usuario = u.id_usuario
-            ORDER BY i.fecha DESC
+            FROM caja_ideas i JOIN usuario u ON i.id_usuario = u.id_usuario ORDER BY i.fecha DESC
         `);
         res.json({ modo: "bd", baseDeDatos: process.env.DB_NAME || "agora", motivo: "", ideas: ideasRes.rows });
     } catch (error) {
@@ -669,10 +639,9 @@ app.post("/api/ideas", async (req, res) => {
     if (!id_usuario || !comentario || !comentario.trim()) return res.status(400).json({ error: "El usuario y el comentario son obligatorios." });
 
     try {
-        const resultado = await db.query(
-            `INSERT INTO caja_ideas (id_usuario, comentario) VALUES ($1, $2) RETURNING id_idea, id_usuario, comentario, fecha`,
-            [id_usuario, comentario.trim()]
-        );
+        const resultado = await db.query(`
+            INSERT INTO caja_ideas (id_usuario, comentario) VALUES ($1, $2) RETURNING id_idea, id_usuario, comentario, fecha
+        `, [id_usuario, comentario.trim()]);
         res.status(201).json(resultado.rows[0]);
     } catch (error) {
         console.error("Error al crear idea:", error);
@@ -689,45 +658,6 @@ app.delete("/api/ideas/:id", async (req, res) => {
     } catch (error) {
         console.error("Error al eliminar idea:", error);
         res.status(500).json({ error: "Error al eliminar la idea.", detalle: error.message });
-    }
-});
-
-app.post("/api/google-login", async (req, res) => {
-    try {
-        const { correo, nombre, apellido } = req.body || {};
-        if (!correo) return res.status(400).json({ mensaje: "Falta el correo requerido." });
-
-        const correoLimpio = correo.trim().toLowerCase();
-        const esProfesor = correoLimpio.endsWith("@cedesdonbosco.ed.cr") && !correoLimpio.endsWith("@est.cedesdonbosco.ed.cr");
-        const rolCalculado = esProfesor ? "profesor" : "estudiante";
-
-        const resultadoBusqueda = await db.query(`
-            SELECT id_usuario, nombre, apellido, correo, rol, activo 
-            FROM usuario WHERE LOWER(correo) = LOWER($1) LIMIT 1
-        `, [correoLimpio]);
-
-        let usuario;
-
-        if (resultadoBusqueda.rows.length > 0) {
-            usuario = resultadoBusqueda.rows[0];
-            if (usuario.activo === false) return res.status(403).json({ mensaje: "Tu cuenta se encuentra desactivada." });
-        } else {
-            const contrasenaAleatoria = crypto.randomBytes(16).toString("hex");
-            const hashContrasena = await bcrypt.hash(contrasenaAleatoria, 10);
-
-            const nuevoUsuarioRes = await db.query(`
-                INSERT INTO usuario (nombre, apellido, correo, contrasena, rol, activo) 
-                VALUES ($1, $2, $3, $4, $5, true) 
-                RETURNING id_usuario, nombre, apellido, correo, rol, activo;
-            `, [nombre || "Usuario", apellido || "Ágora", correoLimpio, hashContrasena, rolCalculado]);
-
-            usuario = nuevoUsuarioRes.rows[0];
-        }
-
-        res.json({ mensaje: "Inicio de sesión con Google exitoso", usuario, token: crearToken(usuario) });
-    } catch (error) {
-        console.error("Error en /api/google-login:", error);
-        res.status(500).json({ mensaje: "Error interno al procesar Google Login.", detalle: error.message });
     }
 });
 

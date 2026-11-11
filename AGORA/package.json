@@ -5,7 +5,7 @@
   "scripts": {
     "start": "webpack serve --mode development --open",
     "dev": "webpack serve --mode development --open",
-    "build": "webpack --mode production"
+    "build": "webpack-cli build --mode production"
   },
   "dependencies": {
     "framer-motion": "^12.23.0",

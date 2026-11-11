@@ -8,14 +8,27 @@ const path = require("path");
 dotenv.config();
 const app = express();
 
-// Aumentamos el límite del body parser a 10mb para permitir la subida de imágenes/banderas en Base64
+// =========================================================
+// CONFIGURACIÓN CRÍTICA PARA RENDER Y GOOGLE AUTH
+// =========================================================
+// 1. Confiar en el proxy de Render para generar URLs HTTPS correctas
+app.set('trust proxy', 1);
+
+// 2. Middleware para permitir la comunicación con Google y evitar bloqueos
+app.use((req, res, next) => {
+    // Permite que la ventana emergente de Google se comunique con tu app
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    // Asegura que no se envíe una política de referencia restrictiva
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
+// =========================================================
+// MIDDLEWARES GENERALES
+// =========================================================
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use((req, res, next) => {
-    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    next();
-});
 
 // =========================================================
 // REGISTRO Y LOGIN DE USUARIOS
@@ -721,13 +734,11 @@ app.post("/api/google-login", async (req, res) => {
 // =========================================================
 // CONFIGURACIÓN PARA SERVIR EL FRONTEND DE REACT
 // =========================================================
-// Usamos path.resolve para asegurar una ruta absoluta desde la raíz del proyecto en Render
 const clientBuildPath = path.resolve(__dirname, "../AGORA/dist");
 console.log("Buscando archivos de React en la ruta:", clientBuildPath);
 
 app.use(express.static(clientBuildPath));
 
-// Cualquier otra ruta que no empiece con /api irá a React
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(clientBuildPath, "index.html"), (err) => {
     if (err) {
